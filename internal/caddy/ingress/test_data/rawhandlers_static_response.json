@@ -1,0 +1,19 @@
+{
+  "handle": [
+    {
+      "handler": "headers",
+      "response": {
+        "set": {
+          "X-Powered-By": [
+            "caddy"
+          ]
+        }
+      }
+    },
+    {
+      "handler": "static_response",
+      "status_code": 200,
+      "body": "hello"
+    }
+  ]
+}
