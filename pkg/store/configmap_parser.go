@@ -33,6 +33,17 @@ type ConfigMapOptions struct {
 	// appended after the default policy, e.g. to issue wildcard certificates
 	// for specific subjects through a different DNS provider.
 	ExtraTLSAutomationPolicies string `json:"extraTLSAutomationPolicies,omitempty"`
+
+	// ExtraRoutes is a raw JSON array of http routes appended after all
+	// ingress-generated routes, e.g. a catch-all route serving a static
+	// response for otherwise unmatched hosts. Referenced handler modules
+	// must be compiled into the controller binary.
+	ExtraRoutes string `json:"extraRoutes,omitempty"`
+	// ErrorRoutes is a raw JSON array of http routes installed as the
+	// server's error handling routes (the JSON equivalent of the Caddyfile
+	// handle_errors directive), e.g. to serve a friendly page when a
+	// backend is unreachable instead of an empty 502.
+	ErrorRoutes string `json:"errorRoutes,omitempty"`
 }
 
 func stringToCaddyDurationHookFunc() mapstructure.DecodeHookFunc {

@@ -138,6 +138,54 @@ extraTLSAutomationPolicies: |
   }]
 ```
 
+## Raw Caddy Configuration
+
+The controller intentionally generates Caddy config from Ingress resources, but
+three escape hatches allow injecting raw [Caddy JSON](https://caddyserver.com/docs/json/)
+where the Ingress spec falls short. Any handler modules referenced must be
+compiled into the controller binary.
+
+### Per-Ingress handlers
+
+The `caddy.ingress.kubernetes.io/raw-handlers` annotation accepts a JSON array
+of `http.handlers` module objects, inserted after the rewrite/redirect handlers
+and before `reverse_proxy`:
+
+```yaml
+metadata:
+  annotations:
+    caddy.ingress.kubernetes.io/raw-handlers: |
+      [{"handler": "headers", "response": {"set": {"X-Frame-Options": ["DENY"]}}}]
+```
+
+### Global extra routes
+
+The `extraRoutes` config option accepts a JSON array of
+[routes](https://caddyserver.com/docs/json/apps/http/servers/routes/) appended
+after all ingress-generated routes — e.g. a catch-all page for unmatched hosts:
+
+```yaml
+extraRoutes: |
+  [{
+    "handle": [{"handler": "static_response", "status_code": 404, "body": "Nothing configured here."}],
+    "terminal": true
+  }]
+```
+
+### Error routes
+
+The `errorRoutes` config option accepts a JSON array of routes installed as the
+server's [error handler](https://caddyserver.com/docs/json/apps/http/servers/errors/)
+(the JSON equivalent of the Caddyfile `handle_errors` directive) — e.g. a
+friendly page when a backend is unreachable:
+
+```yaml
+errorRoutes: |
+  [{
+    "handle": [{"handler": "static_response", "status_code": "{http.error.status_code}", "body": "This site is temporarily unavailable."}]
+  }]
+```
+
 ## Bringing Your Own Certificates
 
 If you would like to disable automatic HTTPS for a specific host and use your
