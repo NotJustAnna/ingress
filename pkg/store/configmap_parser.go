@@ -23,6 +23,16 @@ type ConfigMapOptions struct {
 	OnDemandTLS           bool           `json:"onDemandTLS,omitempty"`
 	OnDemandAsk           string         `json:"onDemandAsk,omitempty"`
 	OCSPCheckInterval     caddy.Duration `json:"ocspCheckInterval,omitempty"`
+
+	// DNSProvider is a raw JSON dns.providers module object (with inline key
+	// "name", e.g. {"name": "cloudflare", "api_token": "{env.CF_API_TOKEN}"})
+	// used to enable the ACME DNS-01 challenge on the default issuer. The
+	// referenced provider module must be compiled into the controller binary.
+	DNSProvider string `json:"dnsProvider,omitempty"`
+	// ExtraTLSAutomationPolicies is a raw JSON array of tls.automation.policies
+	// appended after the default policy, e.g. to issue wildcard certificates
+	// for specific subjects through a different DNS provider.
+	ExtraTLSAutomationPolicies string `json:"extraTLSAutomationPolicies,omitempty"`
 }
 
 func stringToCaddyDurationHookFunc() mapstructure.DecodeHookFunc {

@@ -2,6 +2,7 @@ package global
 
 import (
 	"encoding/json"
+	"fmt"
 
 	caddy2 "github.com/caddyserver/caddy/v2"
 	"github.com/caddyserver/caddy/v2/caddyconfig"
@@ -52,6 +53,18 @@ func (p ConfigMapPlugin) GlobalHandler(config *converter.Config, store *store.St
 			acmeIssuer.Email = cfgMap.Email
 		}
 
+		if cfgMap.DNSProvider != "" {
+			provider := json.RawMessage(cfgMap.DNSProvider)
+			if !json.Valid(provider) {
+				return fmt.Errorf("dnsProvider is not valid JSON: %s", cfgMap.DNSProvider)
+			}
+			acmeIssuer.Challenges = &caddytls.ChallengesConfig{
+				DNS: &caddytls.DNSChallengeConfig{
+					ProviderRaw: provider,
+				},
+			}
+		}
+
 		var onDemandConfig *caddytls.OnDemandConfig
 		if cfgMap.OnDemandTLS {
 			onDemandConfig = &caddytls.OnDemandConfig{
@@ -71,6 +84,17 @@ func (p ConfigMapPlugin) GlobalHandler(config *converter.Config, store *store.St
 				},
 			},
 		}
+	}
+
+	if cfgMap.ExtraTLSAutomationPolicies != "" {
+		var policies []*caddytls.AutomationPolicy
+		if err := json.Unmarshal([]byte(cfgMap.ExtraTLSAutomationPolicies), &policies); err != nil {
+			return fmt.Errorf("parsing extraTLSAutomationPolicies: %w", err)
+		}
+		if tlsApp.Automation == nil {
+			tlsApp.Automation = &caddytls.AutomationConfig{}
+		}
+		tlsApp.Automation.Policies = append(tlsApp.Automation.Policies, policies...)
 	}
 
 	if cfgMap.ProxyProtocol {

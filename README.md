@@ -103,6 +103,40 @@ helm install ...\
 > You can also specify options 
 > for the on-demand config: `onDemandAsk`
 
+## DNS-01 Challenge and Wildcard Certificates
+
+To solve ACME challenges via DNS (required for wildcard certificates, and useful
+when the controller is not reachable on port 80/443 from the internet), set the
+`dnsProvider` config to a [DNS provider module](https://caddyserver.com/docs/modules/)
+JSON object. The provider module must be compiled into the controller binary
+(`cloudflare` and `route53` are included by default; see
+`internal/controller/plugins_dns.go` to add others):
+
+```sh
+helm install ...\
+  --set-json 'ingressController.config.dnsProvider={"name":"cloudflare","api_token":"{env.CF_API_TOKEN}"}'
+```
+
+Credentials should be passed as environment variables on the controller pod and
+referenced with [`{env.*}` placeholders](https://caddyserver.com/docs/conventions#placeholders)
+so that no secret material is stored in the ConfigMap.
+
+For more advanced setups (e.g. different DNS providers per domain, or issuing a
+wildcard certificate for specific subjects), `extraTLSAutomationPolicies` accepts
+a raw JSON array of [TLS automation policies](https://caddyserver.com/docs/json/apps/tls/automation/policies/)
+that are appended after the default policy:
+
+```yaml
+extraTLSAutomationPolicies: |
+  [{
+    "subjects": ["*.example.com"],
+    "issuers": [{
+      "module": "acme",
+      "email": "your@email.com",
+      "challenges": {"dns": {"provider": {"name": "route53"}}}
+    }]
+  }]
+```
 
 ## Bringing Your Own Certificates
 
