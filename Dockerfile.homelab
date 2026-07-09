@@ -1,0 +1,23 @@
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+ARG TARGETOS TARGETARCH
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -ldflags='-s -w' -o /ingress-controller ./cmd/caddy
+
+FROM alpine:latest AS certs
+RUN apk --update add ca-certificates
+
+FROM alpine:latest
+RUN apk add --no-cache libcap && \
+    addgroup -S caddy && adduser -S caddy -G caddy
+COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
+COPY --from=build /ingress-controller /ingress-controller
+RUN setcap cap_net_bind_service=+ep /ingress-controller
+
+EXPOSE 80 443 9765
+ENTRYPOINT ["/ingress-controller"]
