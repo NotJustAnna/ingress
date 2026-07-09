@@ -18,6 +18,7 @@ RUN apk add --no-cache libcap && \
 COPY --from=certs /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /ingress-controller /ingress-controller
 RUN setcap cap_net_bind_service=+ep /ingress-controller
+USER caddy
 
 EXPOSE 80 443 9765
 ENTRYPOINT ["/ingress-controller"]
